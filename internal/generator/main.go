@@ -68,7 +68,9 @@ func (g Generator) getDataFromFeeds(urls []string, lastHours int) error {
 			}
 		}
 
-		g.feedData[feed.Title] = items
+		if len(items) > 0 {
+			g.feedData[feed.Title] = items
+		}
 	}
 
 	return nil

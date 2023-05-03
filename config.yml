@@ -1,2 +1,2 @@
 interval: 168 # hours
-urls: [] # URLs of RSS feeds
+urls: [] # URLs of RSS feeds, put newsletters at the end
