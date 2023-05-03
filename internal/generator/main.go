@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	TEMPLATES_PATH = "./templates/"
+	DATE_FORMAT    = "2006 Jan 2"
+	FILE_NAME      = "index"
 	OUTPUT_PATH    = "./dist/"
-	YYYYMMDD       = "2006-01-02"
+	TEMPLATES_PATH = "./templates/"
 )
 
 type Generator struct {
@@ -38,7 +39,7 @@ func (g Generator) GenerateNewsletter(urls []string, lastHours int) (int, error)
 		return 0, err
 	}
 
-	err = g.templatePage()
+	err = g.templatePage(lastHours)
 	if err != nil {
 		return 0, err
 	}
@@ -59,6 +60,10 @@ func (g Generator) getDataFromFeeds(urls []string, lastHours int) error {
 
 		for _, item := range feed.Items {
 			if (time.Now()).Sub(*item.PublishedParsed).Hours() < float64(lastHours) {
+				// try format date
+				if published, err := time.Parse(time.RFC1123, item.Published); err == nil {
+					item.Published = published.Format(DATE_FORMAT)
+				}
 				items = append(items, item)
 			}
 		}
@@ -77,9 +82,9 @@ func (g Generator) getArticlesCount() int {
 	return count
 }
 
-func (g Generator) templatePage() error {
-	date := time.Now().UTC().Format(YYYYMMDD)
-	filePath := filepath.Join(OUTPUT_PATH + date + ".html")
+func (g Generator) templatePage(lastHours int) error {
+	dateString := fmt.Sprintf("%s - %s", time.Now().Add(-time.Hour*time.Duration(lastHours)).UTC().Format(DATE_FORMAT), time.Now().UTC().Format(DATE_FORMAT))
+	filePath := filepath.Join(OUTPUT_PATH + FILE_NAME + ".html")
 	err := os.MkdirAll(OUTPUT_PATH, os.ModePerm)
 	f, err := os.Create(filePath)
 
@@ -97,7 +102,7 @@ func (g Generator) templatePage() error {
 
 	data := Data{
 		FeedData:      g.feedData,
-		DateFormatted: date,
+		DateFormatted: dateString,
 	}
 
 	if err := t.ExecuteTemplate(w, "base", data); err != nil {
