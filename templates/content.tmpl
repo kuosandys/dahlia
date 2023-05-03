@@ -1,0 +1,13 @@
+{{define "content" -}}
+<main>
+  <h1>{{ .DateFormatted }}</h1>
+    {{range $title, $item := .FeedData}}
+      <h2>{{$title}}</h2>
+      {{range $_, $i := $item}}
+        <span>{{$i.Published}}</span>
+        <a href="{{$i.Link}}">{{$i.Title}}</a>
+        <p>{{$i.Description}}</p>
+      {{end}}
+    {{end}}
+</main>
+{{end}}
