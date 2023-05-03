@@ -2,6 +2,3 @@
 ._*
 
 /dist
-
-# Comment out for build
-config.yml
