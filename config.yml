@@ -1,2 +1,16 @@
 interval: 168 # hours
-urls: [] # URLs of RSS feeds, put newsletters at the end
+urls: # URLs of RSS feeds, put newsletters at the end
+  - https://buttondown.email/cassidoo/rss
+  - https://feeds.feedburner.com/brad-frosts-blog
+  - https://joshcollinsworth.com/api/rss.xml
+  - https://jvns.ca/atom.xml
+  - https://leebyron.com/til/feed.xml
+  - https://lynnandtonic.com/feed.xml
+  - https://paularmstrong.dev/feed.xml
+  - https://thesephist.com/index.xml
+  - https://www.smashingmagazine.com/feed
+  - https://www.swyx.io/rss.xml
+  - https://www.taniarascia.com/rss.xml
+  - https://cprss.s3.amazonaws.com/frontendfoc.us.xml
+  - https://cprss.s3.amazonaws.com/javascriptweekly.com.xml
+  - https://cprss.s3.amazonaws.com/nodeweekly.com.xml
