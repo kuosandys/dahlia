@@ -30,7 +30,7 @@ func (a *application) run() {
 	if articles > 0 {
 		a.infoLog.Printf("Newsletter generated: %d new articles.", articles)
 	} else {
-		a.infoLog.Println("Skipping newsletter generatino: no new articles.")
+		a.infoLog.Println("Skipping newsletter generation: no new articles.")
 	}
 }
 
