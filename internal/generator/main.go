@@ -80,6 +80,7 @@ func (g Generator) getArticlesCount() int {
 func (g Generator) templatePage() error {
 	date := time.Now().UTC().Format(YYYYMMDD)
 	filePath := filepath.Join(OUTPUT_PATH + date + ".html")
+	err := os.MkdirAll(OUTPUT_PATH, os.ModePerm)
 	f, err := os.Create(filePath)
 
 	defer f.Close()
