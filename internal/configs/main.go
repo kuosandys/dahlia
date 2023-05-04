@@ -5,8 +5,9 @@ import (
 )
 
 type Configs struct {
-	URLs     []string
-	Interval int
+	URLs              []string
+	Interval          int
+	DropboxKoboFolder string
 }
 
 func Load(filename, filepath string, interval int) (Configs, error) {
@@ -21,6 +22,7 @@ func Load(filename, filepath string, interval int) (Configs, error) {
 
 	viper.SetDefault("urls", []string{})
 	viper.SetDefault("interval", interval)
+	viper.SetDefault("dropboxKoboFolder", "/")
 
 	err := viper.Unmarshal(&configs)
 	if err != nil {

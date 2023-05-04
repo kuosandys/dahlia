@@ -1,10 +1,13 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/kuosandys/dahlia/internal/configs"
+	"github.com/kuosandys/dahlia/internal/dropbox"
 	"github.com/kuosandys/dahlia/internal/generator"
 )
 
@@ -20,7 +23,7 @@ type application struct {
 	infoLog  *log.Logger
 }
 
-func (a *application) run() {
+func (a *application) run(dropboxAccessToken string) {
 	g := generator.New()
 	articles, err := g.GenerateNewsletter(a.configs.URLs, a.configs.Interval)
 	if err != nil {
@@ -32,9 +35,19 @@ func (a *application) run() {
 	} else {
 		a.infoLog.Println("Skipping newsletter generation: no new articles.")
 	}
+
+	client := dropbox.New(dropboxAccessToken)
+	path, err := client.Upload(a.configs.DropboxKoboFolder+"test.txt", strings.NewReader("test"))
+	if err != nil {
+		a.errorLog.Fatal(err)
+	}
+	a.infoLog.Printf("File saved to %s", path)
 }
 
 func main() {
+	dropboxAccessToken := flag.String("dropboxAccessToken", "", "Dropbox access token")
+	flag.Parse()
+
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ltime|log.Lshortfile)
 
@@ -49,5 +62,5 @@ func main() {
 		configs:  configs,
 	}
 
-	app.run()
+	app.run(*dropboxAccessToken)
 }

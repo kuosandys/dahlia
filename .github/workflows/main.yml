@@ -1,4 +1,4 @@
-name: build and deploy
+name: run
 
 on:
   push:
@@ -22,11 +22,5 @@ jobs:
         with:
           go-version: '1.18.0'
 
-      - name: build
-        run: go run -v ./cmd
-
-      - name: deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+      - name: run
+        run: go run -v ./cmd ${{ secrets.DROPBOX }}
