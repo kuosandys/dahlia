@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/kuosandys/dahlia/internal/configs"
 	"github.com/kuosandys/dahlia/internal/dropbox"
@@ -24,23 +24,25 @@ type application struct {
 }
 
 func (a *application) run(dropboxAccessToken string) {
-	g := generator.New()
-	articles, err := g.GenerateNewsletter(a.configs.URLs, a.configs.Interval)
+	g := generator.New(a.configs.URLs, a.configs.Interval)
+	buf := new(bytes.Buffer)
+	articleCount, fileName, err := g.GenerateEpub(buf)
 	if err != nil {
 		a.errorLog.Fatal(err)
 	}
 
-	if articles > 0 {
-		a.infoLog.Printf("Newsletter generated: %d new articles.", articles)
+	if articleCount > 0 {
+		a.infoLog.Printf("Generated: %d new articles.", articleCount)
 	} else {
-		a.infoLog.Println("Skipping newsletter generation: no new articles.")
+		a.infoLog.Println("Skipping generation: no new articles.")
 	}
 
 	client := dropbox.New(dropboxAccessToken)
-	path, err := client.Upload(a.configs.DropboxKoboFolder+"test.txt", strings.NewReader("test"))
+	path, err := client.Upload(a.configs.DropboxKoboFolder+fileName, buf)
 	if err != nil {
 		a.errorLog.Fatal(err)
 	}
+
 	a.infoLog.Printf("File saved to %s", path)
 }
 

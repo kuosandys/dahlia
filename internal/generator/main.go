@@ -1,135 +1,181 @@
 package generator
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
-	"os"
-	"path/filepath"
-	"text/template"
+	"html"
+	"net/url"
+	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
+	"github.com/bmaupin/go-epub"
 	"github.com/mmcdole/gofeed"
 )
 
 const (
-	DATE_FORMAT    = "2006 Jan 2"
-	FILE_NAME      = "index"
-	OUTPUT_PATH    = "./dist/"
-	TEMPLATES_PATH = "./templates/"
+	DATE_FORMAT = "2006 Jan 2"
+	OUTPUT_PATH = "./dist/"
 )
 
 type Generator struct {
-	feedData map[string][]*gofeed.Item
+	epub       *epub.Epub
+	feedParser *gofeed.Parser
+	feeds      []string
+	images     map[string]string
+	lastHours  int
 }
 
-type Data struct {
-	FeedData      map[string][]*gofeed.Item
-	DateFormatted string
+type Article struct {
+	title   string
+	link    string
+	author  string
+	date    string
+	content string
 }
 
-func New() *Generator {
-	return &Generator{
-		feedData: make(map[string][]*gofeed.Item),
+func New(feeds []string, lastHours int) *Generator {
+	g := &Generator{
+		feeds:      feeds,
+		feedParser: gofeed.NewParser(),
+		images:     make(map[string]string),
+		lastHours:  lastHours,
 	}
+	g.epub = epub.NewEpub(g.getTitle())
+
+	return g
 }
 
-func (g Generator) GenerateNewsletter(urls []string, lastHours int) (int, error) {
-	err := g.getDataFromFeeds(urls, lastHours)
-	if err != nil {
-		return 0, err
-	}
+func (g *Generator) GenerateEpub(buf *bytes.Buffer) (int, string, error) {
+	articleCount := 0
+	sourcesContent := `
+	<h2>Sources</h2>
+	`
 
-	err = g.templatePage(lastHours)
-	if err != nil {
-		return 0, err
-	}
-
-	return g.getArticlesCount(), nil
-}
-
-func (g Generator) getDataFromFeeds(urls []string, lastHours int) error {
-	fp := gofeed.NewParser()
-
-	for _, url := range urls {
-		feed, err := fp.ParseURL(url)
-		if err != nil {
-			return err
+	for _, feed := range g.feeds {
+		feedTitle, articles, err := g.getArticlesFromFeed(feed)
+		if err != nil || len(articles) == 0 {
+			continue
 		}
 
-		items := []*gofeed.Item{}
+		articleCount += len(articles)
 
-		for _, item := range feed.Items {
-			if (time.Now()).Sub(*item.PublishedParsed).Hours() < float64(lastHours) {
-				// try format date
-				if published, err := time.Parse(time.RFC1123, item.Published); err == nil {
-					item.Published = published.Format(DATE_FORMAT)
+		for _, article := range articles {
+			sectionTitle := fmt.Sprintf(`
+			<h2>%s</h2>
+			<p>%s // %s // <a href="%s">Source</a></p>
+			<hr></hr>
+			`, article.title, feedTitle, article.date, article.link)
+
+			content := article.content
+			if document, err := goquery.NewDocumentFromReader(strings.NewReader(article.content)); err == nil {
+				if url, err := url.Parse(article.link); err == nil {
+					document = g.fixImages(document, fmt.Sprintf("%s://%s", url.Scheme, url.Host))
+					content, _ = document.Html()
 				}
-				items = append(items, item)
 			}
+
+			g.epub.AddSection(html.UnescapeString(sectionTitle+content), article.title, "", "")
+
+			sourcesContent += fmt.Sprintf(`
+			<p>%s %s, <i>%s</i>, accessed %s, %s</p>
+			`, article.author, article.date, feedTitle, time.Now().UTC().Format(DATE_FORMAT), article.link)
+		}
+	}
+
+	fileName := g.getTitle() + ".epub"
+
+	if articleCount == 0 {
+		return 0, fileName, nil
+	}
+
+	// cite sources
+	g.epub.AddSection(html.UnescapeString(sourcesContent), "Sources", "", "")
+
+	// for testing
+	// err := g.epub.Write(fmt.Sprintf("%s%s.epub", OUTPUT_PATH, g.epub.Title()))
+	_, err := g.epub.WriteTo(buf)
+	if err != nil {
+		return 0, g.epub.Title(), err
+	}
+
+	return articleCount, fileName, nil
+}
+
+func (g *Generator) getTitle() string {
+	return fmt.Sprintf("%s - %s", time.Now().Add(-time.Hour*time.Duration(g.lastHours)).UTC().Format(DATE_FORMAT), time.Now().UTC().Format(DATE_FORMAT))
+}
+
+func (g *Generator) getArticlesFromFeed(url string) (string, []Article, error) {
+	feed, err := g.feedParser.ParseURL(url)
+	if err != nil {
+		return "", nil, err
+	}
+
+	var author string
+	if len(feed.Authors) > 0 {
+		author = feed.Authors[0].Name
+	}
+
+	articles := []Article{}
+
+	for _, item := range feed.Items {
+		// assumption: feed is sorted from newest to oldest
+		if (time.Now()).Sub(*item.PublishedParsed).Hours() > float64(g.lastHours) {
+			break
 		}
 
-		if len(items) > 0 {
-			g.feedData[feed.Title] = items
+		// try get author if missing from feed
+		if len(item.Authors) > 0 {
+			author = item.Authors[0].Name
 		}
+
+		// try format date
+		if published, err := time.Parse(time.RFC1123, item.Published); err == nil {
+			item.Published = published.Format(DATE_FORMAT)
+		}
+
+		article := Article{
+			title:   item.Title,
+			link:    item.Link,
+			author:  author,
+			date:    item.Published,
+			content: item.Content,
+		}
+		articles = append(articles, article)
 	}
 
-	return nil
+	return feed.Title, articles, nil
 }
 
-func (g Generator) getArticlesCount() int {
-	count := 0
-	for _, v := range g.feedData {
-		count += len(v)
-	}
-	return count
-}
+func (g *Generator) fixImages(document *goquery.Document, baseURL string) *goquery.Document {
+	var err error
 
-func (g Generator) templatePage(lastHours int) error {
-	dateString := fmt.Sprintf("%s - %s", time.Now().Add(-time.Hour*time.Duration(lastHours)).UTC().Format(DATE_FORMAT), time.Now().UTC().Format(DATE_FORMAT))
-	filePath := filepath.Join(OUTPUT_PATH + FILE_NAME + ".html")
-	err := os.MkdirAll(OUTPUT_PATH, os.ModePerm)
-	f, err := os.Create(filePath)
+	document.Find("img").Each(func(i int, img *goquery.Selection) {
+		src, exists := img.Attr("src")
+		if !exists {
+			return
+		}
 
-	defer f.Close()
+		relativePath, ok := g.images[src]
+		if !ok {
+			var imageURL = src
+			// if src is a relative path, prefix with base URL
+			if strings.HasPrefix(src, "/") {
+				imageURL = baseURL + src
+			}
+			relativePath, err = g.epub.AddImage(imageURL, "")
+			if err != nil {
+				return
+			}
 
-	if err != nil {
-		return fmt.Errorf("Error creating file %s: %v", filePath, err)
-	}
+			g.images[src] = relativePath
+		}
 
-	w := bufio.NewWriter(f)
-	t, err := g.loadTemplates()
-	if err != nil {
-		return err
-	}
+		img.SetAttr("src", relativePath)
+		img.RemoveAttr("srcset")
+		img.RemoveAttr("loading")
+	})
 
-	data := Data{
-		FeedData:      g.feedData,
-		DateFormatted: dateString,
-	}
-
-	if err := t.ExecuteTemplate(w, "base", data); err != nil {
-		return fmt.Errorf("Error executing template %s : %v", filePath, err)
-	}
-
-	if err := w.Flush(); err != nil {
-		return fmt.Errorf("Error writing file %s: %v", filePath, err)
-	}
-
-	return nil
-}
-
-func (g Generator) loadTemplates() (*template.Template, error) {
-	files := []string{"base.tmpl", "content.tmpl"}
-
-	var paths []string
-	for _, tmpl := range files {
-		paths = append(paths, filepath.Join(TEMPLATES_PATH, tmpl))
-	}
-
-	t, err := template.ParseFiles(paths...)
-	if err != nil {
-		return nil, err
-	}
-
-	return t, nil
+	return document
 }
