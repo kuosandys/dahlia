@@ -84,6 +84,27 @@ func (d *DropboxClient) GetAccessToken() error {
 	return nil
 }
 
+func (d *DropboxClient) GetRefreshToken(code string, redirectURI string) (string, error) {
+	body := url.Values{}
+	body.Add("grant_type", "authorization_code")
+	body.Add("client_id", d.appKey)
+	body.Add("client_secret", d.appSecret)
+	body.Add("redirect_uri", redirectURI)
+	body.Add("code", code)
+
+	req, err := http.NewRequest(http.MethodPost, ENDPOINT_TOKEN, strings.NewReader(body.Encode()))
+	if err != nil {
+		return "", err
+	}
+
+	res, err := d.execute(req)
+	if err != nil {
+		return "", err
+	}
+
+	return res["refresh_token"].(string), nil
+}
+
 func (d *DropboxClient) execute(req *http.Request) (map[string]interface{}, error) {
 	res, err := d.httpClient.Do(req)
 	if err != nil || res.StatusCode >= 300 {
