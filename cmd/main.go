@@ -18,17 +18,18 @@ const (
 )
 
 type application struct {
-	configs  configs.Configs
-	errorLog *log.Logger
-	infoLog  *log.Logger
+	configs       configs.Configs
+	dropboxClient *dropbox.DropboxClient
+	errorLog      *log.Logger
+	infoLog       *log.Logger
 }
 
-func (a *application) run(dropboxAccessToken string) {
+func (a *application) run() {
 	g := generator.New(a.configs.URLs, a.configs.Interval)
 	buf := new(bytes.Buffer)
 	articleCount, fileName, err := g.GenerateEpub(buf)
 	if err != nil {
-		a.errorLog.Fatal(err)
+		a.errorLog.Fatalf("Error generating file: %s", err)
 	}
 
 	if articleCount > 0 {
@@ -37,17 +38,23 @@ func (a *application) run(dropboxAccessToken string) {
 		a.infoLog.Println("Skipping generation: no new articles.")
 	}
 
-	client := dropbox.New(dropboxAccessToken)
-	path, err := client.Upload(a.configs.DropboxKoboFolder+fileName, buf)
+	err = a.dropboxClient.GetAccessToken()
 	if err != nil {
-		a.errorLog.Fatal(err)
+		a.errorLog.Fatalf("Error getting Dropbox access token: %s", err)
+	}
+
+	path, err := a.dropboxClient.Upload(a.configs.DropboxKoboFolder+fileName, buf)
+	if err != nil {
+		a.errorLog.Fatalf("Error uploading file to Dropbox: %s", err)
 	}
 
 	a.infoLog.Printf("File saved to %s", path)
 }
 
 func main() {
-	dropboxAccessToken := flag.String("dropboxAccessToken", "", "Dropbox access token")
+	dropboxAppKey := flag.String("dropboxAppKey", "", "Dropbox app key")
+	dropboxAppSecret := flag.String("dropboxAppSecret", "", "Dropbox app secret")
+	dropboxRefreshToken := flag.String("dropboxRefreshToken", "", "Dropbox refresh token")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ltime)
@@ -59,10 +66,11 @@ func main() {
 	}
 
 	app := &application{
-		infoLog:  infoLog,
-		errorLog: errorLog,
-		configs:  configs,
+		configs:       configs,
+		dropboxClient: dropbox.New(*dropboxAppKey, *dropboxAppSecret, *dropboxRefreshToken),
+		errorLog:      errorLog,
+		infoLog:       infoLog,
 	}
 
-	app.run(*dropboxAccessToken)
+	app.run()
 }
