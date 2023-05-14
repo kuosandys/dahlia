@@ -29,7 +29,7 @@ type application struct {
 func (a *application) run(upload bool) {
 	g := generator.New(a.configs.URLs, a.configs.Interval)
 	buf := new(bytes.Buffer)
-	articleCount, fileName, err := g.GenerateEpub(buf)
+	articleCount, fileName, err := g.GenerateKepub(buf)
 	if err != nil {
 		a.errorLog.Fatalf("Error generating file: %s", err)
 	}
@@ -55,6 +55,7 @@ func (a *application) run(upload bool) {
 		}
 
 		a.infoLog.Printf("File written to %s", path)
+
 		return
 	}
 

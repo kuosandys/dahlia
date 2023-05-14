@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"io/ioutil"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bmaupin/go-epub"
 	"github.com/mmcdole/gofeed"
+	"github.com/pgaskin/kepubify/kepub"
 )
 
 const (
@@ -45,7 +48,65 @@ func New(feeds []string, lastHours int) *Generator {
 	return g
 }
 
+func (g *Generator) GenerateKepub(buf *bytes.Buffer) (int, string, error) {
+	tempEpub, err := ioutil.TempFile("", g.getTitle()+".epub")
+	if err != nil {
+		return 0, "", err
+	}
+
+	tempKepub, err := ioutil.TempFile("", g.getTitle()+"kepub.epub")
+	if err != nil {
+		return 0, "", err
+	}
+
+	defer os.Remove(tempEpub.Name())
+	defer os.Remove(tempKepub.Name())
+
+	articleCount, err := g.generate()
+	if err != nil {
+		return articleCount, "", err
+	}
+
+	// write to temp epub file - required by kepub converter
+	err = g.epub.Write(tempEpub.Name())
+	if err != nil {
+		return articleCount, "", err
+	}
+
+	converter := kepub.Converter{}
+	err = converter.Convert(tempEpub.Name(), tempKepub.Name())
+	if err != nil {
+		return articleCount, "", err
+	}
+
+	data, err := os.ReadFile(tempKepub.Name())
+	if err != nil {
+		return articleCount, "", err
+	}
+
+	_, err = buf.Write(data)
+	if err != nil {
+		return articleCount, "", err
+	}
+
+	return articleCount, g.getTitle() + ".kepub.epub", nil
+}
+
 func (g *Generator) GenerateEpub(buf *bytes.Buffer) (int, string, error) {
+	articleCount, err := g.generate()
+	if err != nil {
+		return articleCount, "", err
+	}
+
+	_, err = g.epub.WriteTo(buf)
+	if err != nil {
+		return articleCount, "", err
+	}
+
+	return articleCount, g.getTitle() + ".epub", nil
+}
+
+func (g *Generator) generate() (int, error) {
 	articleCount := 0
 	sourcesContent := `
 	<h2>Sources</h2>
@@ -82,21 +143,14 @@ func (g *Generator) GenerateEpub(buf *bytes.Buffer) (int, string, error) {
 		}
 	}
 
-	fileName := g.getTitle() + ".epub"
-
 	if articleCount == 0 {
-		return 0, fileName, nil
+		return 0, nil
 	}
 
 	// cite sources
 	g.epub.AddSection(html.UnescapeString(sourcesContent), "Sources", "", "")
 
-	_, err := g.epub.WriteTo(buf)
-	if err != nil {
-		return 0, g.epub.Title(), err
-	}
-
-	return articleCount, fileName, nil
+	return articleCount, nil
 }
 
 func (g *Generator) getTitle() string {
