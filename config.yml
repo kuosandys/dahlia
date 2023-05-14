@@ -1,11 +1,20 @@
 interval: 168 # hours
 urls: # URLs of RSS feeds
+  - https://2ality.com/feeds/posts.atom
+  - https://alistapart.com/main/feed/
+  - https://blog.bytebytego.com/feed
+  - https://blog.cleancoder.com/atom.xml
+  - https://blog.pragmaticengineer.com/rss/
   - https://feeds.feedburner.com/brad-frosts-blog
+  - https://feeds.feedburner.com/leaverou
   - https://joshcollinsworth.com/api/rss.xml
   - https://jvns.ca/atom.xml
   - https://leebyron.com/til/feed.xml
+  - https://lethain.com/feeds.xml
+  - https://lucasfcosta.com/feed.xml
   - https://lynnandtonic.com/feed.xml
   - https://paularmstrong.dev/feed.xml
+  - https://martinfowler.com/feed.atom
   - https://thesephist.com/index.xml
   - https://www.smashingmagazine.com/feed
   - https://www.swyx.io/rss.xml
