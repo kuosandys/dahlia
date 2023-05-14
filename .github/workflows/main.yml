@@ -1,11 +1,11 @@
-name: build and deploy
+name: run
 
 on:
   push:
     branches:
       - build
   schedule:
-    - cron: '0 4 * * 2' # every Tuesday at 4AM
+    - cron: '0 4 * * 6' # every Saturday at 4AM
 
 jobs:
   build:
@@ -22,11 +22,5 @@ jobs:
         with:
           go-version: '1.18.0'
 
-      - name: build
-        run: go run -v ./cmd
-
-      - name: deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+      - name: run
+        run: go run -v ./cmd --dropboxAppKey=${{ secrets.DROPBOX_APP_KEY }} --dropboxAppSecret=${{ secrets.DROPBOX_APP_SECRET }} --dropboxRefreshToken=${{ secrets.DROPBOX_REFRESH_TOKEN }}

@@ -1,5 +1,5 @@
 interval: 168 # hours
-urls: # URLs of RSS feeds, put newsletters at the end
+urls: # URLs of RSS feeds
   - https://feeds.feedburner.com/brad-frosts-blog
   - https://joshcollinsworth.com/api/rss.xml
   - https://jvns.ca/atom.xml
@@ -10,3 +10,4 @@ urls: # URLs of RSS feeds, put newsletters at the end
   - https://www.smashingmagazine.com/feed
   - https://www.swyx.io/rss.xml
   - https://www.taniarascia.com/rss.xml
+dropboxKoboFolder: "/Apps/Rakuten Kobo/" # include trailing slash
