@@ -15,7 +15,6 @@ import (
 
 const (
 	DATE_FORMAT = "2006 Jan 2"
-	OUTPUT_PATH = "./dist/"
 )
 
 type Generator struct {
@@ -92,8 +91,6 @@ func (g *Generator) GenerateEpub(buf *bytes.Buffer) (int, string, error) {
 	// cite sources
 	g.epub.AddSection(html.UnescapeString(sourcesContent), "Sources", "", "")
 
-	// for testing
-	// err := g.epub.Write(fmt.Sprintf("%s%s.epub", OUTPUT_PATH, g.epub.Title()))
 	_, err := g.epub.WriteTo(buf)
 	if err != nil {
 		return 0, g.epub.Title(), err
@@ -121,7 +118,7 @@ func (g *Generator) getArticlesFromFeed(url string) (string, []Article, error) {
 
 	for _, item := range feed.Items {
 		// assumption: feed is sorted from newest to oldest
-		if (time.Now()).Sub(*item.PublishedParsed).Hours() > float64(g.lastHours) {
+		if time.Since(*item.PublishedParsed).Hours() > float64(g.lastHours) {
 			break
 		}
 
