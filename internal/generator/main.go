@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -108,18 +109,31 @@ func (g *Generator) GenerateEpub(buf *bytes.Buffer) (int, string, error) {
 
 func (g *Generator) generate() (int, error) {
 	articleCount := 0
+	articlesByFeed := make(map[string][]Article)
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(g.feeds))
+
+	for _, feed := range g.feeds {
+		go func(feed string) {
+			defer wg.Done()
+
+			feedTitle, articles, err := g.getArticlesFromFeed(feed)
+			if err != nil || len(articles) == 0 {
+				return
+			}
+
+			articleCount += len(articles)
+			articlesByFeed[feedTitle] = articles
+		}(feed)
+	}
+
+	wg.Wait()
+
 	sourcesContent := `
 	<h2>Sources</h2>
 	`
-
-	for _, feed := range g.feeds {
-		feedTitle, articles, err := g.getArticlesFromFeed(feed)
-		if err != nil || len(articles) == 0 {
-			continue
-		}
-
-		articleCount += len(articles)
-
+	for feedTitle, articles := range articlesByFeed {
 		for _, article := range articles {
 			sectionTitle := fmt.Sprintf(`
 			<h2>%s</h2>
