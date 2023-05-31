@@ -6,7 +6,7 @@ on:
       - 'v*.*.*'
 
 env:
-  PROJECT_NAME: dahlia
+  PROJECT_NAME: anthology
   GOOS: linux
   GOARCH: amd64
 

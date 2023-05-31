@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/kuosandys/dahlia/internal/dropbox"
+	"github.com/kuosandys/anthology/internal/dropbox"
 	"github.com/pkg/browser"
 )
 
