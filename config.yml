@@ -1,3 +1,3 @@
-interval: 168 # hours
+lastHours: 168
 urls: [] # URLs of RSS feeds
 dropboxKoboFolder: "/Apps/Rakuten Kobo/" # include trailing slash

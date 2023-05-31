@@ -1,4 +1,4 @@
-module github.com/kuosandys/dahlia
+module github.com/kuosandys/anthology
 
 go 1.18
 
