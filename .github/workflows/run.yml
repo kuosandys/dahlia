@@ -1,9 +1,6 @@
 name: run
 
 on:
-  push:
-    branches:
-      - build
   schedule:
     - cron: "0 4 * * 6" # every Saturday at 4AM
       
@@ -31,4 +28,4 @@ jobs:
           chmod: 0755
 
       - name: run generate
-        run: ${{ env.PROJECT_NAME }} --dropboxAppKey=${{ secrets.DROPBOX_APP_KEY }} --dropboxAppSecret=${{ secrets.DROPBOX_APP_SECRET }} --dropboxRefreshToken=${{ secrets.DROPBOX_REFRESH_TOKEN }}
+        run: ${{ env.PROJECT_NAME }} --upload --dropboxAppKey=${{ secrets.DROPBOX_APP_KEY }} --dropboxAppSecret=${{ secrets.DROPBOX_APP_SECRET }} --dropboxRefreshToken=${{ secrets.DROPBOX_REFRESH_TOKEN }}

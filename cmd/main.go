@@ -76,7 +76,7 @@ func main() {
 	dropboxAppKey := flag.String("dropboxAppKey", "", "Dropbox app key")
 	dropboxAppSecret := flag.String("dropboxAppSecret", "", "Dropbox app secret")
 	dropboxRefreshToken := flag.String("dropboxRefreshToken", "", "Dropbox refresh token")
-	upload := flag.Bool("upload", true, "Whether to upload to Dropbox; defaults to 'true'")
+	upload := flag.Bool("upload", false, "Whether to upload to Dropbox; defaults to 'false'")
 	configFileName := flag.String("configFileName", CONFIG_FILENAME, "Config file name; defaults to 'config.yml'")
 	configFilePath := flag.String("configFilePath", CONFIG_FILEPATH, "Path to config file; defaults to '.'")
 	flag.Parse()
