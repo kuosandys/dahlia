@@ -1,4 +1,4 @@
-interval: 168 # hours
+lastHours: 168
 urls: # URLs of RSS feeds
   - https://2ality.com/feeds/posts.atom
   - https://alistapart.com/main/feed/
