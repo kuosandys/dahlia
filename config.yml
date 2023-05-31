@@ -5,6 +5,8 @@ urls: # URLs of RSS feeds
   - https://blog.bytebytego.com/feed
   - https://blog.cleancoder.com/atom.xml
   - https://blog.pragmaticengineer.com/rss/
+  - https://brr.fyi/feed.xml
+  - https://www.dictionaryofobscuresorrows.com/rss
   - https://feeds.feedburner.com/brad-frosts-blog
   - https://feeds.feedburner.com/leaverou
   - https://joshcollinsworth.com/api/rss.xml
